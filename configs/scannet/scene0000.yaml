@@ -1,0 +1,42 @@
+inherit_from: configs/scannet/scannet.yaml
+mapping:
+  bound: [[-0.1,8.6],[-0.1,8.9],[-0.3,3.3]]
+  marching_cubes_bound: [[-0.1,8.6],[-0.1,8.9],[-0.3,3.3]]
+  keyframe_every: 1
+  map_every: 1
+
+
+mesh: 
+  render_color: True
+  vis: 50  
+
+
+grid:
+  hash_size: 16 # 1.59M
+  
+
+data:
+  datadir: ../RAMEN-origin/RAMEN-main/data/scannet/scene0000_00
+  trainskip: 1
+  output: output/scannet/scene0000_00
+  exp_name: Test1
+  load_path: fixed_decoder.pt
+
+tracking:
+  gt_pose: True
+
+
+multi_agents:
+  num_agents: 3
+  complete_graph: True
+  #edges_list: [[0,1], [0,2], [1,2]]
+  edges_for_dropout: [ [0,1,0.5], [0,2,0.5], [1,2,0.5] ] # [node i, node j, possibility of dropping out]
+  #edges_for_dropout: []
+  distributed_algorithm: 'AUQ_CADMM'
+  rho: 0.0001
+  track_uncertainty: True
+  fix_decoder: True
+  alpha: 0.15 # DSGD
+  #alpha: 0.05 # DSGT
+
+edge_based: True

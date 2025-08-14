@@ -1,0 +1,877 @@
+"""import open3d as o3d # need to be imported first! otherwise initialization issue
+import argparse
+import os
+import glob
+import time
+import numpy as np
+import torch
+import cv2
+from tqdm import tqdm
+from torch.utils.data import DataLoader
+from multiprocessing import Process, Queue
+from queue import Empty
+
+import config
+from datasets.dataset import get_dataset
+import sys 
+import math
+import matplotlib.pyplot as plt
+
+def extrinsic_to_camera_params(extrinsic_matrix):
+    # Extract rotation and translation
+    R = extrinsic_matrix[:3, :3]
+    t = extrinsic_matrix[:3, 3]
+
+    camera_position = -R.T @ t
+    up_vector = R.T @ np.array([0, -1, 0])
+    front_vector = R.T @ np.array([0, 0, -1])
+
+    # LookAt is the point in the world the camera is looking at
+    look_at_position = camera_position + front_vector
+
+    return camera_position, look_at_position, up_vector
+
+
+def normalize(x):
+    return x / np.linalg.norm(x)
+
+
+def create_camera_actor(i, color_list, is_gt=False, scale=0.005):
+    cam_points = scale * np.array([
+        [0,   0,   0],
+        [-1,  -1, 1.5],
+        [1,  -1, 1.5],
+        [1,   1, 1.5],
+        [-1,   1, 1.5],
+        [-0.5, 1, 1.5],
+        [0.5, 1, 1.5],
+        [0, 1.2, 1.5]])
+
+    cam_lines = np.array([[1, 2], [2, 3], [3, 4], [4, 1], [1, 3], [2, 4],
+                          [1, 0], [0, 2], [3, 0], [0, 4], [5, 7], [7, 6]])
+    points = []
+    for cam_line in cam_lines:
+        begin_points, end_points = cam_points[cam_line[0]
+                                              ], cam_points[cam_line[1]]
+        t_vals = np.linspace(0., 1., 100)
+        begin_points, end_points
+        point = begin_points[None, :] * \
+            (1.-t_vals)[:, None] + end_points[None, :] * (t_vals)[:, None]
+        points.append(point)
+    points = np.concatenate(points)
+    color = (0.0, 0.0, 0.0) if is_gt else color_list[i]
+    camera_actor = o3d.geometry.PointCloud(
+        points=o3d.utility.Vector3dVector(points))
+    camera_actor.paint_uniform_color(color)
+
+    return camera_actor
+
+
+def draw_trajectory(queue, output, cam_scale, estimate_c2w_list_agents, 
+                    gt_c2w_list, num_frames, camera_params_extrinsic, 
+                    bounding_box, agent_id, save_rendering):
+    logfile = open(f"./ramen_draw_log_{os.getpid()}.txt", "a", buffering=1)  # line-buffered
+    def log(msg):
+        print(msg, file=logfile, flush=True)
+
+        print(msg, flush=True)
+        
+    draw_trajectory.queue = queue
+    draw_trajectory.cameras = {}
+    draw_trajectory.points = {}
+    draw_trajectory.ix = 0
+    draw_trajectory.warmup = 0
+    draw_trajectory.mesh = None
+    draw_trajectory.uncertainty_spheres = None
+    draw_trajectory.frame_idx = 0
+    draw_trajectory.traj_actor = None
+    draw_trajectory.traj_actor_gt = None
+    draw_trajectory.color_list = [
+                                    (1.0, 0.0, 0.0),   # Red
+                                    (0.0, 1.0, 0.0),   # Green
+                                    (0.0, 0.0, 1.0),   # Blue
+                                    (1.0, 0.647, 0.0), # Orange
+                                    (1.0, 1.0, 0.0),   # Yellow
+                                    (0.502, 0.0, 0.502), # Purple
+                                    (0.0, 1.0, 1.0),   # Cyan
+                                    (1.0, 0.753, 0.796), # Pink
+                                    (0.0, 0.502, 0.0), # Dark Green
+                                    (1.0, 0.412, 0.706), # Hot Pink
+                                    (0.0, 0.0, 0.502),   # Navy Blue
+                                    (0.502, 0.502, 0.0), # Olive Green
+                                    (0.502, 0.0, 0.0),   # Maroon
+                                    (1.0, 0.843, 0.0), # Gold
+                                    (0.753, 0.753, 0.753), # Silver
+                                    (0.0, 0.753, 1.0),  # Deep Sky Blue 
+                                    (1.0, 0.0, 1.0),   # Magenta
+                                    (0.855, 0.439, 0.839), # Orchid
+                                    (0.498, 1.0, 0.831), # Aquamarine
+                                    (0.980, 0.502, 0.447)  # Salmon
+                                ]
+    draw_trajectory.num_frames = num_frames
+
+    if save_rendering:
+        os.system(f"rm -rf {output}/tmp_rendering")
+    
+    def animation_callback(vis):
+        cam = vis.get_view_control().convert_to_pinhole_camera_parameters()
+        while True:
+            try:
+                data = draw_trajectory.queue.get_nowait()
+                if data[0] == 'pose':
+                    i, pose, is_gt = data[1:]
+                    if is_gt:
+                        i += 100000
+
+                    if i in draw_trajectory.cameras:
+                        cam_actor, pose_prev = draw_trajectory.cameras[i]
+                        pose_change = pose @ np.linalg.inv(pose_prev)
+
+                        cam_actor.transform(pose_change)
+                        vis.update_geometry(cam_actor)
+
+                        if i in draw_trajectory.points:
+                            pc = draw_trajectory.points[i]
+                            pc.transform(pose_change)
+                            vis.update_geometry(pc)
+
+                    else:
+                        cam_actor = create_camera_actor(i, draw_trajectory.color_list, is_gt, cam_scale)
+                        cam_actor.transform(pose)
+                        vis.add_geometry(cam_actor)
+
+                    draw_trajectory.cameras[i] = (cam_actor, pose)
+
+                elif data[0] == 'mesh':
+                    meshfile = data[1]
+                    if draw_trajectory.mesh is not None:
+                        vis.remove_geometry(draw_trajectory.mesh)
+                    draw_trajectory.mesh = o3d.io.read_triangle_mesh(meshfile)
+                    draw_trajectory.mesh.compute_vertex_normals()
+                    # flip face orientation
+                    new_triangles = np.asarray(
+                        draw_trajectory.mesh.triangles)[:, ::-1]
+                    draw_trajectory.mesh.triangles = o3d.utility.Vector3iVector(
+                        new_triangles)
+                    draw_trajectory.mesh.triangle_normals = o3d.utility.Vector3dVector(
+                        -np.asarray(draw_trajectory.mesh.triangle_normals))
+                    vis.add_geometry(draw_trajectory.mesh)
+
+                elif data[0] == 'uncertainty':
+                    rgb = data[1]
+                    vertices = data[2]
+                    if draw_trajectory.uncertainty_spheres is not None:
+                        vis.remove_geometry(draw_trajectory.uncertainty_spheres)
+                    # draw_trajectory.uncertainty_pd = o3d.geometry.PointCloud()
+                    # draw_trajectory.uncertainty_pd.points = o3d.utility.Vector3dVector(vertices)
+                    # draw_trajectory.uncertainty_pd.colors = o3d.utility.Vector3dVector(rgb)
+                    # vis.add_geometry(draw_trajectory.uncertainty_pd)
+
+                    def create_sphere_mesh(radius, center, rgb):
+                        sphere = o3d.geometry.TriangleMesh.create_sphere(radius)
+                        sphere.translate(center)
+                        sphere.paint_uniform_color(rgb)
+                        return sphere
+                    
+                    def combine_meshes(meshes):
+                        """"""Combine multiple meshes into one mesh.""""""
+                        combined_mesh = o3d.geometry.TriangleMesh()
+                        for mesh in meshes:
+                            combined_mesh += mesh
+                        return combined_mesh
+
+                    radius = 0.025
+                    spheres = [create_sphere_mesh(radius, vertices[i], rgb[i]) for i in range(rgb.shape[0])]
+                    draw_trajectory.uncertainty_spheres = combine_meshes(spheres) # add one mesh to visualizer in one go is much faster than add these spheres one by one 
+                    vis.add_geometry(draw_trajectory.uncertainty_spheres)
+
+                elif data[0] == 'traj':
+                    i, is_gt = data[1:]
+                    if is_gt:
+                        if draw_trajectory.traj_actor_gt is not None:
+                            vis.remove_geometry(draw_trajectory.traj_actor_gt)
+                            # tmp = draw_trajectory.traj_actor_gt
+                            # del tmp
+                    else:
+                        if draw_trajectory.traj_actor is not None:
+                            vis.remove_geometry(draw_trajectory.traj_actor)
+                            # tmp = draw_trajectory.traj_actor
+                            # del tmp
+
+                    for agent_id, agent_est_c2w in enumerate(estimate_c2w_list_agents):
+                        color = (0.0, 0.0, 0.0) if is_gt else draw_trajectory.color_list[agent_id]
+                        traj_actor = o3d.geometry.PointCloud(
+                            points=o3d.utility.Vector3dVector(gt_c2w_list[(draw_trajectory.num_frames*agent_id+1):(draw_trajectory.num_frames*agent_id+i), :3, 3] if is_gt else agent_est_c2w[1:i, :3, 3]))
+                        traj_actor.paint_uniform_color(color)
+
+                        if is_gt:
+                            draw_trajectory.traj_actor_gt = traj_actor
+                            vis.add_geometry(draw_trajectory.traj_actor_gt)
+                        else:
+                            draw_trajectory.traj_actor = traj_actor
+                            vis.add_geometry(draw_trajectory.traj_actor)
+
+                elif data[0] == 'reset':
+                    draw_trajectory.warmup = -1
+
+                    for i in draw_trajectory.points:
+                        vis.remove_geometry(draw_trajectory.points[i])
+
+                    for i in draw_trajectory.cameras:
+                        vis.remove_geometry(draw_trajectory.cameras[i][0])
+
+                    draw_trajectory.cameras = {}
+                    draw_trajectory.points = {}
+
+            except Empty:
+                break
+
+        # hack to allow interacting with vizualization during inference
+        if len(draw_trajectory.cameras) >= draw_trajectory.warmup:
+            cam = vis.get_view_control().convert_from_pinhole_camera_parameters(cam, allow_arbitrary=True)
+
+        vis.poll_events()
+        vis.update_renderer()
+        if save_rendering:
+            # save the renderings, useful when making a video
+            draw_trajectory.frame_idx += 1
+            os.makedirs(f'{output}/tmp_rendering', exist_ok=True)
+            vis.capture_screen_image(
+                f'{output}/tmp_rendering/{draw_trajectory.frame_idx:06d}.jpg')
+
+    vis = o3d.visualization.Visualizer()
+
+    vis.register_animation_callback(animation_callback)
+    vis.create_window(window_name= f'{output}-agent{agent_id}', height=1080, width=1920)
+    vis.get_render_option().point_size = 4
+    vis.get_render_option().mesh_show_back_face = False
+    vis.get_render_option().show_coordinate_frame = True #red-x, green-y, blue-z 
+
+    # add bounding box 
+    bbox = o3d.geometry.AxisAlignedBoundingBox(min_bound=bounding_box[:, 0], max_bound=bounding_box[:, 1])
+    bbox.color = (1, 0, 0)  # Red color
+    vis.add_geometry(bbox)
+
+    # set up view control 
+    ctr = vis.get_view_control()
+    if camera_params_extrinsic is not None:
+        camera_position, look_at_position, up_vector = extrinsic_to_camera_params(camera_params_extrinsic)
+        # Set the camera parameters
+        ctr.set_front((look_at_position - camera_position))
+        ctr.set_lookat(look_at_position)
+        ctr.set_up(up_vector)
+        ctr.set_zoom(1.0)  # Adjust zoom as necessary
+
+    vis.run()
+
+    # get current camera parameters 
+    camera_params = ctr.convert_to_pinhole_camera_parameters()
+    np.save('camera_params_extrinsic.npy', camera_params.extrinsic)
+    print('camera parameters saved for view control')
+
+    vis.destroy_window()
+
+
+class SLAMFrontend:
+
+    def __init__(self, output, cam_scale=1,
+                 estimate_c2w_list_agents=None, gt_c2w_list=None, num_frames=0, camera_params_extrinsic=None, bounding_box=None, agent_id=0, save_rendering=False):
+        self.queue = Queue()
+        self.p = Process(target=draw_trajectory, args=(
+            self.queue, output, cam_scale, 
+            estimate_c2w_list_agents, gt_c2w_list, num_frames, camera_params_extrinsic, bounding_box, agent_id, save_rendering))
+
+    def update_pose(self, index, pose, gt=False):
+        if isinstance(pose, torch.Tensor):
+            pose = pose.cpu().numpy()
+
+        pose[:3, 2] *= -1
+        self.queue.put_nowait(('pose', index, pose, gt))
+        
+    def update_mesh(self, path):
+        self.queue.put_nowait(('mesh', path))
+
+    def update_uncertainty(self, rgb, vertices):
+        self.queue.put_nowait(('uncertainty', rgb, vertices))
+
+    def update_cam_trajectory(self, c2w_list, gt):
+        self.queue.put_nowait(('traj', c2w_list, gt))
+
+    def reset(self):
+        self.queue.put_nowait(('reset', ))
+
+    def start(self):
+        self.p.start()
+        return self
+
+    def join(self):
+        self.p.join()
+
+
+def get_est_c2w(ckptsdir):
+    if os.path.exists(ckptsdir):
+        ckpts = [os.path.join(ckptsdir, f)
+                 for f in sorted(os.listdir(ckptsdir)) if 'checkpoint' in f] 
+        if len(ckpts) > 0:
+            ckpt_path = ckpts[-1]
+            print('Get ckpt :', ckpt_path)
+
+            ckpt = torch.load(ckpt_path, map_location=torch.device('cpu'))
+            estimate_c2w_list = list(ckpt['pose'].values())
+    estimate_c2w_list = torch.stack(estimate_c2w_list).cpu().numpy()
+    num_frames = len(estimate_c2w_list)
+    return estimate_c2w_list, num_frames
+
+
+def get_grid_resolution(cfg):
+    bounding_box = np.asarray(cfg['mapping']['bound'])
+    dim_max = (bounding_box[:,1] - bounding_box[:,0]).max()
+    N_max = int(dim_max / cfg['grid']['voxel_sdf'])
+
+    F = 2 
+    d = 3 
+    T = 2**cfg['grid']['hash_size']
+    N_min = 16 
+    L = 16
+    b = np.exp2(np.log2(N_max  / N_min) / (L - 1))
+
+    def next_multiple(val, divisor):
+        div_round_up = (val+divisor-1) // divisor 
+        return div_round_up * divisor
+
+    params_in_level_list = []
+    N_l_list = []
+    for l in range(L):
+        N_l = math.ceil(b**l * N_min - 1) + 1 # this is different from how N_l is calculated in the paper
+        N_l_list.append(N_l)
+
+        params_in_level = N_l**d
+        params_in_level = next_multiple(params_in_level, 8) # to make sure memory accesses will be aligned, this will lead to non-integer cube root 
+        params_in_level = min(params_in_level, T) 
+        params_in_level_list.append(params_in_level*F)
+
+    return N_l_list[0], params_in_level_list[0]
+
+
+def process_uncertainty_file(file_path, cfg, N_l, params_in_level, vis_type, neighbor=None):
+    """"""
+        @return : rgb, vertices
+    """"""
+    # get color 
+    if vis_type == 'uncertainty':
+        uncertainty_tensor = torch.load(file_path)[:params_in_level]
+        uncertainty_tensor = uncertainty_tensor.view(-1,2).sum(-1) 
+        uncertainty_tensor /= torch.max(uncertainty_tensor) # normalize
+        rgb = plt.cm.cool(uncertainty_tensor.cpu().numpy())[:,:3]
+    elif vis_type =='Rho':
+        Rho_tensor = torch.load(file_path)[neighbor][:params_in_level]
+        Rho_tensor = Rho_tensor.view(-1,2).sum(-1)
+        Rho_tensor /= torch.max(Rho_tensor)
+        rgb = plt.cm.hot(Rho_tensor.cpu().numpy())[:,:3]
+
+    # get grid 
+    bbox = np.asarray(cfg['mapping']['bound'])
+    x = np.linspace( bbox[0,0], bbox[0,1], num=N_l)
+    y = np.linspace( bbox[1,0], bbox[1,1], num=N_l)
+    z = np.linspace( bbox[2,0], bbox[2,1], num=N_l)
+    grid = np.meshgrid(z, y, x, indexing='ij')
+    vertices = np.stack(grid, axis=-1).reshape(-1, 3)[:,::-1] # so that the 2nd dimension order is (x,y,z)
+
+    return rgb, vertices
+
+
+if __name__ == '__main__':
+    """"""
+        Black: ground truth 
+        python -W ignore .\visualizer.py --config .\configs\Replica\office0_agents.yaml --agent 1
+        -W ignore for ignoring warning
+    """"""
+    parser = argparse.ArgumentParser(
+        description='Arguments to visualize the SLAM process.'
+    )
+    parser.add_argument('--config', type=str, help='Path to config file.')
+    parser.add_argument('--mesh_file', default=None, type=str, help='Show a specific mesh')
+    parser.add_argument('--vis_input_frame',
+                        action='store_true', help='visualize input frames')
+    parser.add_argument('--gt_traj',
+                        action='store_true', help='visualize gt trajectory')
+    parser.add_argument('--agent', default=0, type=int, help='which agent mesh to show')  
+    parser.add_argument('--show_last',
+                        action='store_true', help='show the whole trajectories and the last mesh')
+    parser.add_argument('--mesh_only',
+                        action='store_true', help='only show mesh')
+    parser.add_argument('--culled_mesh',
+                        action='store_true', help='show culled mesh')
+    parser.add_argument('--show_uncertainty',
+                        action='store_true', help='visualize grid uncertainty')
+    parser.add_argument('--CADMM_Rho', default=-1, type=int, help='which CADMM weight to show')  
+    parser.add_argument('--save_rendering', action='store_true', help='save rendering video to `vis.mp4` in output folder ')
+
+
+    args = parser.parse_args()
+    cfg = config.load_config(args.config)
+
+    if os.path.exists('camera_params_extrinsic.npy'):
+        print('Get camera parameters for view control')
+        camera_params_extrinsic = np.load('camera_params_extrinsic.npy')
+    else:
+        camera_params_extrinsic = None
+
+    # get estimated poses
+    ckptsdir_list = glob.glob(os.path.join(cfg['data']['output'], cfg['data']['exp_name'], 'agent_*'))
+    ckptsdir_list = sorted(ckptsdir_list, key=lambda x: int(x.split('_')[-1]))
+    estimate_c2w_list_agents = []
+    for dir in ckptsdir_list:
+        estimate_c2w_list, num_frames = get_est_c2w(dir)
+        estimate_c2w_list_agents.append(estimate_c2w_list)
+
+    # get gt poses
+    dataset = get_dataset(cfg)
+    gt_c2w_list = dataset.poses
+    gt_c2w_list = torch.stack(gt_c2w_list).cpu().numpy()
+    frontend = SLAMFrontend(cfg['data']['exp_name'], cam_scale=0.3,
+                            estimate_c2w_list_agents=estimate_c2w_list_agents, gt_c2w_list=gt_c2w_list, 
+                            num_frames=num_frames, camera_params_extrinsic=camera_params_extrinsic, bounding_box=np.asarray(cfg['mapping']['bound']), agent_id = args.agent,
+                            save_rendering=args.save_rendering).start()
+    
+    # prepare for uncertainty visuasave_renderinglization 
+    if args.show_uncertainty or args.CADMM_Rho != -1:
+        N_l, params_in_level = get_grid_resolution(cfg) #TODO: for now we only visualize level 0 grid
+        print(f'N_l = {N_l}, params_in_level = {params_in_level}')
+
+    start_frame = num_frames - 1 if (args.show_last or args.culled_mesh) else 0
+    for i in tqdm(range(start_frame, num_frames)): # tqdm progress bar starts with 1
+        # show every fourth frame for speed up
+        if args.vis_input_frame and i % 4 == 0:
+            for agent_id in range(len(estimate_c2w_list_agents)):
+                ret = dataset[agent_id*num_frames + i]
+                gt_color = ret['rgb']
+                gt_depth = ret['depth']
+                depth_np = gt_depth.numpy()
+                color_np = (gt_color.numpy()*255).astype(np.uint8)
+                depth_np = depth_np / np.max(depth_np) * 255
+                depth_np = np.clip(depth_np, 0, 255).astype(np.uint8)
+                depth_np = cv2.applyColorMap(depth_np, cv2.COLORMAP_JET)
+                color_np = np.clip(color_np, 0, 255)
+                whole = np.concatenate([color_np, depth_np], axis=0)
+                H, W, _ = whole.shape
+                whole = cv2.resize(whole, (W//4, H//4))
+                # Use the agent_id to create unique window names
+                window_name = f'Agent {agent_id} Input RGB-D Sequence'
+                # Display the image in a separate window for each agent
+                cv2.imshow(window_name, whole[:, :, ::-1])
+            cv2.waitKey(1)
+        time.sleep(0.03) # don't delete this, otherwise loop will immediately ends before mesh and trajectories can be updated
+
+        meshfile = f'{ckptsdir_list[args.agent]}/mesh_track{i}.ply'
+        if args.culled_mesh:
+            meshfile = f'{ckptsdir_list[args.agent]}/mesh_track{i}_cull_occlusion.ply'
+
+        if args.mesh_file != None:
+            meshfile = args.mesh_file 
+
+        if os.path.isfile(meshfile):
+            frontend.update_mesh(meshfile)
+        
+        if args.CADMM_Rho != -1:
+            RhoFile = f'{ckptsdir_list[args.agent]}/CADMM_Rho{i}.pt'
+            if os.path.isfile(RhoFile):
+                rgb, vertices = process_uncertainty_file(RhoFile, cfg, N_l, params_in_level, vis_type='Rho', neighbor=args.CADMM_Rho)
+                frontend.update_uncertainty(rgb, vertices)
+            
+        elif args.show_uncertainty:
+            uncertaintyFile = f'{ckptsdir_list[args.agent]}/uncertain_track{i}.pt'
+            if os.path.isfile(uncertaintyFile):
+                rgb, vertices = process_uncertainty_file(uncertaintyFile, cfg, N_l, params_in_level, vis_type='uncertainty')
+                frontend.update_uncertainty(rgb, vertices)
+
+        if args.mesh_only == False:
+            for id in range(len(estimate_c2w_list_agents)):
+                frontend.update_pose(id, estimate_c2w_list_agents[id][i], gt=False)
+                if args.gt_traj:
+                    frontend.update_pose(id, gt_c2w_list[id*num_frames+i], gt=True)
+            # the visualizer might get stucked if update every frame
+            # with a long sequence (10000+ frames)
+            if (i+1) % 10 == 0 or (i+1) == num_frames:
+                frontend.update_cam_trajectory(i, gt=False)
+                if args.gt_traj:
+                    frontend.update_cam_trajectory(i, gt=True)
+        
+        if i == 1:
+            time.sleep(10) # sleep for the first frame
+
+    if args.save_rendering:
+        time.sleep(15)
+        video_path = os.path.join(cfg['data']['output'], cfg['data']['exp_name'])
+        os.system(
+            f"ffmpeg -f image2 -r 30 -pattern_type glob -i '{video_path}/tmp_rendering_agent{args.agent}/*.jpg' -y {video_path}/vis_{args.agent}.mp4")
+"""
+
+import open3d as o3d  
+import argparse
+import os
+import glob
+import time
+import numpy as np
+import torch
+import cv2
+from tqdm import tqdm
+import sys
+import math
+import matplotlib.pyplot as plt
+import subprocess
+
+import config
+from datasets.dataset import get_dataset
+
+
+def extrinsic_to_camera_params(extrinsic_matrix):
+    R = extrinsic_matrix[:3, :3]
+    t = extrinsic_matrix[:3, 3]
+    camera_position = -R.T @ t
+    front_vector = R.T @ np.array([0, 0, -1])
+    up_vector = R.T @ np.array([0, -1, 0])
+    look_at_position = camera_position + front_vector
+    return camera_position, look_at_position, up_vector
+
+
+def create_camera_actor(i, color_list, is_gt=False, scale=0.1):
+    cam_points = scale * np.array([
+        [0, 0, 0], [-1, -1, 1.5], [1, -1, 1.5], [1, 1, 1.5],
+        [-1, 1, 1.5], [-0.5, 1, 1.5], [0.5, 1, 1.5], [0, 1.2, 1.5]])
+    cam_lines = np.array([[1, 2], [2, 3], [3, 4], [4, 1], [1, 3], [2, 4],
+                         [1, 0], [0, 2], [3, 0], [0, 4], [5, 7], [7, 6]])
+
+    line_set = o3d.geometry.LineSet(
+        points=o3d.utility.Vector3dVector(cam_points),
+        lines=o3d.utility.Vector2iVector(cam_lines),
+    )
+    color = (0.1, 0.1, 0.1) if is_gt else color_list[i % len(color_list)]
+    line_set.paint_uniform_color(color)
+    return line_set
+
+
+def get_est_c2w(ckptsdir):
+    estimate_c2w_list = []
+    if os.path.exists(ckptsdir):
+        ckpts = [os.path.join(ckptsdir, f)
+                for f in sorted(os.listdir(ckptsdir)) if 'checkpoint' in f]
+        if len(ckpts) > 0:
+            ckpt_path = ckpts[-1]
+            print('Get ckpt :', ckpt_path)
+            ckpt = torch.load(ckpt_path, map_location=torch.device('cpu'))
+            estimate_c2w_list = list(ckpt['pose'].values())
+    if not estimate_c2w_list:
+        return None, 0
+    estimate_c2w_list = torch.stack(estimate_c2w_list).cpu().numpy()
+    num_frames = len(estimate_c2w_list)
+    return estimate_c2w_list, num_frames
+
+
+def get_grid_resolution(cfg):
+    bounding_box = np.asarray(cfg['mapping']['bound'])
+    dim_max = (bounding_box[:,1] - bounding_box[:,0]).max()
+    N_max = int(dim_max / cfg['grid']['voxel_sdf'])
+
+    F = 2 
+    d = 3 
+    T = 2**cfg['grid']['hash_size']
+    N_min = 16 
+    L = 16
+    b = np.exp2(np.log2(N_max  / N_min) / (L - 1))
+
+    def next_multiple(val, divisor):
+        div_round_up = (val+divisor-1) // divisor 
+        return div_round_up * divisor
+
+    params_in_level_list = []
+    N_l_list = []
+    for l in range(L):
+        N_l = math.ceil(b**l * N_min - 1) + 1 
+        N_l_list.append(N_l)
+
+        params_in_level = N_l**d
+        params_in_level = next_multiple(params_in_level, 8)
+        params_in_level = min(params_in_level, T) 
+        params_in_level_list.append(params_in_level*F)
+
+    return N_l_list[0], params_in_level_list[0]
+
+
+def process_uncertainty_file(file_path, cfg, N_l, params_in_level, vis_type, neighbor=None):
+    # get color
+    if vis_type == 'uncertainty':
+        uncertainty_tensor = torch.load(file_path)[:params_in_level]
+        uncertainty_tensor = uncertainty_tensor.view(-1,2).sum(-1) 
+        uncertainty_tensor /= torch.max(uncertainty_tensor) # normalization
+        rgb = plt.cm.cool(uncertainty_tensor.cpu().numpy())[:,:3]
+    elif vis_type == 'Rho':
+        Rho_tensor = torch.load(file_path)[neighbor][:params_in_level]
+        Rho_tensor = Rho_tensor.view(-1,2).sum(-1)
+        Rho_tensor /= torch.max(Rho_tensor)
+        rgb = plt.cm.hot(Rho_tensor.cpu().numpy())[:,:3]
+
+    
+    bbox = np.asarray(cfg['mapping']['bound'])
+    x = np.linspace(bbox[0,0], bbox[0,1], num=N_l)
+    y = np.linspace(bbox[1,0], bbox[1,1], num=N_l)
+    z = np.linspace(bbox[2,0], bbox[2,1], num=N_l)
+    grid = np.meshgrid(z, y, x, indexing='ij')
+    vertices = np.stack(grid, axis=-1).reshape(-1, 3)[:,::-1]
+    
+    return rgb, vertices
+
+
+def run_headless_visualization(cfg, args, estimate_c2w_list_agents, gt_c2w_list, num_frames):
+    """
+    using headless render
+    """
+    output_dir = os.path.join(cfg['data']['output'], cfg['data']['exp_name'])
+    render_dir = os.path.join(output_dir, f"headless_render_agent{args.agent}")
+    
+    os.makedirs(render_dir, exist_ok=True)
+    print(f"Results saved at {render_dir}")
+
+    width, height = 1920, 1080
+    renderer = o3d.visualization.rendering.OffscreenRenderer(width, height)
+    
+    mat = o3d.visualization.rendering.MaterialRecord()
+    mat.shader = "defaultLit"
+    mat.base_color = [0.8, 0.8, 0.8, 1.0]
+
+    mat_gt_traj = o3d.visualization.rendering.MaterialRecord()
+    mat_gt_traj.shader = "unlitLine"
+    mat_gt_traj.line_width = 3.0
+    mat_gt_traj.base_color = [0.0, 0.0, 0.0, 1.0]
+
+    if os.path.exists('camera_params_extrinsic.npy'):
+        print("Loading saved cams")
+        camera_params_extrinsic = np.load('camera_params_extrinsic.npy')
+        cam_pos, look_at, up_vec = extrinsic_to_camera_params(camera_params_extrinsic)
+        renderer.scene.camera.look_at(look_at, cam_pos, up_vec)
+    else:
+        print("No saved camera parameters found, using default view")
+        renderer.scene.camera.look_at([0, 0, 0], [0, -2, -4], [0, 1, 0])
+
+    
+    if args.show_uncertainty or args.CADMM_Rho != -1:
+        N_l, params_in_level = get_grid_resolution(cfg)
+        print(f'N_l = {N_l}, params_in_level = {params_in_level}')
+
+
+    renderer.scene.set_background([1.0, 1.0, 1.0, 1.0])  # white background
+    renderer.scene.show_axes(True)  
+
+    # add bounding box
+    bounding_box = np.asarray(cfg['mapping']['bound'])
+    bbox_o3d = o3d.geometry.AxisAlignedBoundingBox(min_bound=bounding_box[:, 0], max_bound=bounding_box[:, 1])
+    bbox_o3d.color = (1, 0, 0)  
+    renderer.scene.add_geometry("bounding_box", bbox_o3d, mat)
+
+
+    start_frame = num_frames - 1 if args.show_last else 0
+    for i in tqdm(range(start_frame, num_frames), desc="渲染帧"):
+
+        renderer.scene.clear_geometry()
+
+        renderer.scene.add_geometry("bounding_box", bbox_o3d, mat)
+
+        mesh_name = f'mesh_track{i}'
+        if args.culled_mesh:
+            mesh_name += '_cull_occlusion'
+        meshfile = f"{output_dir}/agent_{args.agent}/{mesh_name}.ply"
+        
+        if os.path.isfile(meshfile):
+            mesh = o3d.io.read_triangle_mesh(meshfile)
+            mesh.compute_vertex_normals()
+            
+           # turn the mesh upside down
+            new_triangles = np.asarray(mesh.triangles)[:, ::-1]
+            mesh.triangles = o3d.utility.Vector3iVector(new_triangles)
+            mesh.triangle_normals = o3d.utility.Vector3dVector(-np.asarray(mesh.triangle_normals))
+
+            renderer.scene.add_geometry(f"mesh_{i}", mesh, mat)
+
+        # add uncertainty visualization
+        if args.CADMM_Rho != -1:
+            RhoFile = f'{output_dir}/agent_{args.agent}/CADMM_Rho{i}.pt'
+            if os.path.isfile(RhoFile):
+                rgb, vertices = process_uncertainty_file(RhoFile, cfg, N_l, params_in_level, 
+                                                       vis_type='Rho', neighbor=args.CADMM_Rho)
+            
+                radius = 0.025
+                for v_idx in range(len(vertices)):
+                    sphere = o3d.geometry.TriangleMesh.create_sphere(radius)
+                    sphere.translate(vertices[v_idx])
+                    sphere.paint_uniform_color(rgb[v_idx])
+                    renderer.scene.add_geometry(f"sphere_{v_idx}", sphere, mat)
+                    
+        elif args.show_uncertainty:
+            uncertaintyFile = f'{output_dir}/agent_{args.agent}/uncertain_track{i}.pt'
+            if os.path.isfile(uncertaintyFile):
+                rgb, vertices = process_uncertainty_file(uncertaintyFile, cfg, N_l, params_in_level, 
+                                                       vis_type='uncertainty')
+                
+       
+                radius = 0.025
+                for v_idx in range(len(vertices)):
+                    sphere = o3d.geometry.TriangleMesh.create_sphere(radius)
+                    sphere.translate(vertices[v_idx])
+                    sphere.paint_uniform_color(rgb[v_idx])
+                    renderer.scene.add_geometry(f"sphere_{v_idx}", sphere, mat)
+
+        if not args.mesh_only:
+            
+            COLOR_LIST = [
+                (1.0, 0.0, 0.0),   # Red
+                (0.0, 1.0, 0.0),   # Green
+                (0.0, 0.0, 1.0),   # Blue
+                (1.0, 0.647, 0.0), # Orange
+                (1.0, 1.0, 0.0),   # Yellow
+                (0.502, 0.0, 0.502), # Purple
+                (0.0, 1.0, 1.0),   # Cyan
+                (1.0, 0.753, 0.796), # Pink
+                (0.0, 0.502, 0.0), # Dark Green
+                (1.0, 0.412, 0.706), # Hot Pink
+                (0.0, 0.0, 0.502),   # Navy Blue
+                (0.502, 0.502, 0.0), # Olive Green
+                (0.502, 0.0, 0.0),   # Maroon
+                (1.0, 0.843, 0.0), # Gold
+                (0.753, 0.753, 0.753), # Silver
+                (0.0, 0.753, 1.0),  # Deep Sky Blue 
+                (1.0, 0.0, 1.0),   # Magenta
+                (0.855, 0.439, 0.839), # Orchid
+                (0.498, 1.0, 0.831), # Aquamarine
+                (0.980, 0.502, 0.447)  # Salmon
+            ]
+            
+            for agent_id, est_c2w_list in enumerate(estimate_c2w_list_agents):
+                pose = est_c2w_list[i].copy()
+                pose[:3, 2] *= -1 
+                cam_actor = create_camera_actor(agent_id, COLOR_LIST, is_gt=False)
+                cam_actor.transform(pose)
+                renderer.scene.add_geometry(f"cam_{agent_id}", cam_actor, mat)
+
+           
+            for agent_id, est_c2w_list in enumerate(estimate_c2w_list_agents):
+                traj_points = est_c2w_list[1:i+1, :3, 3]
+                if len(traj_points) > 1:
+                    lines = [[k, k + 1] for k in range(len(traj_points) - 1)]
+                    traj = o3d.geometry.LineSet(
+                        points=o3d.utility.Vector3dVector(traj_points),
+                        lines=o3d.utility.Vector2iVector(lines)
+                    )
+                    traj.paint_uniform_color(COLOR_LIST[agent_id % len(COLOR_LIST)])
+                    renderer.scene.add_geometry(f"traj_{agent_id}", traj, mat)
+
+            #add GT trajectory
+            if args.gt_traj and gt_c2w_list is not None:
+                for agent_id in range(len(estimate_c2w_list_agents)):
+                    gt_traj_points = gt_c2w_list[(agent_id*num_frames + 1):(agent_id*num_frames + i + 1), :3, 3]
+                    if len(gt_traj_points) > 1:
+                        lines = [[k, k + 1] for k in range(len(gt_traj_points) - 1)]
+                        gt_traj = o3d.geometry.LineSet(
+                            points=o3d.utility.Vector3dVector(gt_traj_points),
+                            lines=o3d.utility.Vector2iVector(lines)
+                        )
+                        renderer.scene.add_geometry(f"gt_traj_{agent_id}", gt_traj, mat_gt_traj)
+
+        # render and save the image
+        img = renderer.render_to_image()
+        o3d.io.write_image(f"{render_dir}/{i:06d}.jpg", img)
+            
+    print("Done rendering frames")
+    return render_dir
+
+
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser(
+        description='Arguments to visualize the SLAM process in headless mode.'
+    )
+    parser.add_argument('--config', type=str, required=True, help='Path to config file.')
+    parser.add_argument('--mesh_file', default=None, type=str, help='Show a specific mesh')
+    parser.add_argument('--gt_traj',
+                        action='store_true', help='visualize gt trajectory')
+    parser.add_argument('--agent', default=0, type=int, help='which agent mesh to show')  
+    parser.add_argument('--show_last',
+                        action='store_true', help='show the whole trajectories and the last mesh')
+    parser.add_argument('--mesh_only',
+                        action='store_true', help='only show mesh')
+    parser.add_argument('--culled_mesh',
+                        action='store_true', help='show culled mesh')
+    parser.add_argument('--show_uncertainty',
+                        action='store_true', help='visualize grid uncertainty')
+    parser.add_argument('--CADMM_Rho', default=-1, type=int, help='which CADMM weight to show') 
+    parser.add_argument('--video_framerate', default=30, type=int, help='FPS for output video')
+
+    args = parser.parse_args()
+    cfg = config.load_config(args.config)
+    
+    try:
+        ckptsdir_list = glob.glob(os.path.join(cfg['data']['output'], cfg['data']['exp_name'], 'agent_*'))
+        ckptsdir_list = sorted(ckptsdir_list, key=lambda x: int(x.split('_')[-1]))
+        
+        estimate_c2w_list_agents = []
+        num_frames = 0
+        for dir_path in ckptsdir_list:
+            estimate_c2w_list, n_frames = get_est_c2w(dir_path)
+            if estimate_c2w_list is not None:
+                estimate_c2w_list_agents.append(estimate_c2w_list)
+                if n_frames > 0:
+                    num_frames = n_frames
+
+        if not estimate_c2w_list_agents:
+            raise FileNotFoundError("Failed to load estimated poses from checkpoint directories.")
+
+        # get ground truth poses
+        try:
+            dataset = get_dataset(cfg)
+            gt_c2w_list = dataset.poses
+            gt_c2w_list = torch.stack(gt_c2w_list).cpu().numpy()
+        except Exception as e:
+            print(f"Warning: Failed to load GT poses: {e}")
+            gt_c2w_list = None
+
+        if num_frames > 0:
+            render_dir = run_headless_visualization(cfg, args, estimate_c2w_list_agents, gt_c2w_list, num_frames)
+            
+            output_dir = os.path.join(cfg['data']['output'], cfg['data']['exp_name'])
+            video_path = os.path.join(output_dir, f"vis_headless_agent{args.agent}.mp4")
+        
+            if os.path.exists(render_dir) and len(os.listdir(render_dir)) > 0:
+                print(f"从 {render_dir} 创建视频...")
+                
+                # use subprocess to call ffmpeg
+                command = [
+                    'ffmpeg',
+                    '-f', 'image2',
+                    '-framerate', str(args.video_framerate),
+                    '-pattern_type', 'glob',
+                    '-i', f"{render_dir}/*.jpg",
+                    '-c:v', 'mpeg4',  
+                    '-pix_fmt', 'yuv420p',
+                    '-y',
+                    video_path
+                ]
+                
+                print(f"Command:{' '.join(command)}")
+                
+                try:
+                    result = subprocess.run(command, check=True, capture_output=True, text=True)
+                    print(f"Video saved at: {video_path}")
+                except FileNotFoundError:
+                    print("Error: 'ffmpeg' command not found. Please ensure it is installed and available in your system PATH.")
+                except subprocess.CalledProcessError as e:
+                    print("Error occurred while executing ffmpeg:")
+                    print("Return code:", e.returncode)
+                    print("stdout:", e.stdout)
+                    print("stderr:", e.stderr)
+            else:
+                print(f"Error: No rendered images found in '{render_dir}', unable to create video.")
+        else:
+            print("Error: No frames found for rendering.")
+
+    except (FileNotFoundError, ImportError) as e:
+        print(f"Execution failed: {e}")
+        print("Please ensure your working directory is 'RAMEN-main', and that the config file and output directory paths are correct.")
