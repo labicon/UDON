@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
   <!-- Replace the content tag with appropriate information -->
-  <meta name="description" content="RAMEN: Real-time Asynchronous Multi-agent Neural Implicit Mapping">
-  <meta property="og:title" content="RAMEN: Real-time Asynchronous Multi-agent Neural Implicit Mapping"/>
-  <meta property="og:description" content="RAMEN: Real-time Asynchronous Multi-agent Neural Implicit Mapping"/>
-  <meta property="og:url" content="https://https://iconlab.negarmehr.com/RAMEN/"/>
+  <meta name="description" content="UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints">
+  <meta property="og:title" content="UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints"/>
+  <meta property="og:description" content="UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints"/>
+  <meta property="og:url" content="https://https://iconlab.negarmehr.com/UDON/"/>
   <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
   <meta property="og:image" content="static/image/flowchart.png" />
   <meta property="og:image:width" content="1263"/>
@@ -21,10 +21,10 @@
   <meta name="twitter:card" content="summary_large_image"> -->
   
   <!-- Keywords for your paper to be indexed by-->
-  <meta name="keywords" content="RAMEN: Real-time Asynchronous Multi-agent Neural Implicit Mapping, Star tracker, convolutional neural network, CNN, star detection, star centroiding, attitude determination, CubeSat">
+  <meta name="keywords" content="UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints, SLAM, Distributed Optimization, Neural Implicit Mapping, Multi-Robot, Multi-Agent">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>RAMEN</title>
+  <title>UDON</title>
   <link rel="icon" type="image/x-icon" href="static/images/blahaj.ico">
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
   rel="stylesheet">
@@ -72,20 +72,22 @@
         <div class="columns is-centered">
           <div class="column has-text-centered">
             <!-- Title here -->
-            <h1 class="title is-1 publication-title">RAMEN: Real-time Asynchronous Multi-agent Neural Implicit Mapping</h1>
+            <h1 class="title is-1 publication-title">UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints</h1>
             <h2 class="subtitle is-3 publication-title">
-              <span class="rainbow-text">Accepted by RSS 2025</span>
+              <span class="rainbow-text">Accepted by ICRA 2026</span>
             </h2>
             <div class="is-size-5 publication-authors">
               <!-- Paper authors -->
-              <span class="author-block">Hongrui Zhao,</span>
-                <span class="author-block"><a href="https://www.borisivanovic.com/">Boris Ivanovic</a>,</span>
-                  <span class="author-block"><a href="https://negarmehr.com/">Negar Mehr</a>,</span>
+              <span class="author-block">Hongrui Zhao<sup>*</sup>,</span>
+                <span class="author-block"><a href="https://www.wyaaaattwho.xyz/">Xunlan Zhou</a><sup>*</sup>,</span>
+                  <span class="author-block"><a href="https://www.borisivanovic.com/">Boris Ivanovic</a>,</span>
+                    <span class="author-block"><a href="https://negarmehr.com/">Negar Mehr</a>,</span>
   
                   </div>
 
                   <div class="is-size-5 publication-authors">
                     <span class="author-block">University of Illinois Urbana-Champaign</span><br>
+                    <span class="author-block">Nanjing University</span><br>
                     <span class="author-block">NVIDIA Research</span><br>
                     <span class="author-block">University of California Berkeley</span>
                   </div>
@@ -93,7 +95,7 @@
  
                   <!-- Github link -->
                   <span class="link-block">
-                    <a href="https://github.com/labicon/RAMEN" target="_blank"
+                    <a href="https://github.com/labicon/UDON" target="_blank"
                     class="external-link button is-normal is-rounded is-dark">
                     <span class="icon">
                       <i class="fab fa-github"></i>
@@ -104,7 +106,7 @@
 
                 <!-- ArXiv abstract Link -->
                 <span class="link-block">
-                  <a href="https://arxiv.org/abs/2502.19592" target="_blank"
+                  <a href="https://arxiv.org/abs/2509.12702" target="_blank"
                   class="external-link button is-normal is-rounded is-dark">
                   <span class="icon">
                     <i class="ai ai-arxiv"></i>
@@ -148,15 +150,7 @@
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>
-            Multi-agent neural implicit mapping allows robots to collaboratively capture and reconstruct complex environments with high fidelity. 
-            However, existing approaches often rely on synchronous communication, which is impractical in real-world scenarios with limited bandwidth and potential communication interruptions. 
-            This paper introduces RAMEN: Real-time Asynchronous Multi-agEnt Neural implicit mapping, a novel approach designed to address this challenge.
-            RAMEN employs an uncertainty-weighted multi-agent consensus optimization algorithm that accounts for communication disruptions. 
-            When communication is lost between a pair of agents, each agent retains only an outdated copy of its neighbor's map, with the uncertainty of this copy increasing over time since the last communication.
-            Using gradient update information, we quantify the uncertainty associated with each parameter of the neural network map. 
-            Neural network maps from different agents are brought to consensus on the basis of their levels of uncertainty, with consensus biased towards network parameters with lower uncertainty.
-            To achieve this, we derive a weighted variant of the decentralized consensus alternating direction method of multipliers (C-ADMM) algorithm, facilitating robust collaboration among agents with varying communication and update frequencies.
-            Through extensive evaluations on real-world datasets and robot hardware experiments, we demonstrate RAMEN's superior mapping performance under challenging communication conditions.             
+           Multi-robot mapping with neural implicit representations enables the compact reconstruction of complex environments. However, it demands robustness against communication challenges like packet loss and limited bandwidth. While prior works have introduced various mechanisms to mitigate communication disruptions, performance degradation still occurs under extremely low communication success rates. This paper presents UDON, a real-time multi-agent neural implicit mapping framework that introduces a novel uncertainty-weighted distributed optimization to achieve high-quality mapping under severe communication deterioration. The uncertainty weighting prioritizes more reliable portions of the map, while the distributed optimization isolates and penalizes mapping disagreement between individual pairs of communicating agents. We conduct extensive experiments on standard benchmark datasets and real-world robot hardware. We demonstrate that UDON significantly outperforms existing baselines, maintaining high-fidelity reconstructions and consistent scene representations even under extreme communication degradation (as low as 1% success rate).
           </p>
         </div>
       </div>
