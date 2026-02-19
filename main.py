@@ -790,7 +790,7 @@ def create_agent_graph(cfg, dataset):
     for i in range(1, num_agents):
         print(f'\nCreating agent {i} by copying template')
         agent_i = copy.deepcopy(agent_template)
-        agent_i.agent_id = i # 必须更新每个智能体的ID
+        agent_i.agent_id = i 
         print(f'agent_{i} fix decoder: {agent_i.fix_decoder}')
         agents.append(agent_i)
 
