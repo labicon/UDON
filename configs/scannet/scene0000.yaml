@@ -16,7 +16,7 @@ grid:
   
 
 data:
-  datadir: ../RAMEN-origin/RAMEN-main/data/scannet/scene0000_00
+  datadir: ./data/scannet/scene0000_00
   trainskip: 1
   output: output/scannet/scene0000_00
   exp_name: Test1

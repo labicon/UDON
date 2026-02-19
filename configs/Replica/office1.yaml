@@ -15,7 +15,7 @@ data:
   datadir: data/Replica/office1
   trainskip: 1
   output: output/Replica/office1
-  exp_name: CADMM_D50_2
+  exp_name: Udon
   load_path: fixed_decoder.pt
 
 
@@ -35,4 +35,6 @@ multi_agents:
   fix_decoder: True
   alpha: 0.15 # DSGD
   #alpha: 0.02 # DSGT
+
+edge_based: True
 

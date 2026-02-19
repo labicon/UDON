@@ -15,7 +15,7 @@ data:
   datadir: data/Replica/room1
   trainskip: 1
   output: output/Replica/room1
-  exp_name: Ours_With_NARUTO_1
+  exp_name: Udon
   load_path: trained_decoder.pt
 
 
@@ -26,12 +26,11 @@ tracking:
 multi_agents:
   num_agents: 3
   complete_graph: True
-  #edges_list: [[0,1], [0,2], [1,2]]
-  edges_for_dropout: [ [0,1,0.5], [0,2,0.5], [1,2,0.5] ] # [node i, node j, possibility of dropping out]
-  #edges_for_dropout: []
+  edges_for_dropout: [ [0,1,0.5], [0,2,0.5], [1,2,0.5] ]
   distributed_algorithm: 'AUQ_CADMM'
   rho: 0.001
   track_uncertainty: True
   fix_decoder: True
-  alpha: 0.9 # DSGD
-  #alpha: 0.10 # DSGT
+  alpha: 0.9
+
+edge_based: True

@@ -1,115 +1,109 @@
-dataset: 'replica'  # Dataset name / 数据集名称
+dataset: 'replica'
 
 data:
-  downsample: 1        # Downsampling factor for input data / 输入数据的下采样比例
-  sc_factor: 1         # Scale factor for input data / 输入数据的缩放因子
-  translation: 0       # Translation applied to input data / 输入数据的平移量
-  num_workers: 4       # Number of data loading workers / 数据加载线程数
+  downsample: 1
+  sc_factor: 1
+  translation: 0
+  num_workers: 4
 
 mapping:
-  sample: 2048             # Number of samples per mapping iteration / 每次映射迭代的采样点数
-  first_mesh: True         # Whether to mesh on the first frame / 是否在第一帧生成网格
-  iters: 10                # Number of mapping iterations per frame / 每帧映射的迭代次数
-  cur_frame_iters: 0       # Current frame mapping iterations / 当前帧映射的迭代次数
-  lr_embed: 0.01           # Learning rate for embedding / 嵌入的学习率
-  lr_decoder: 0.01         # Learning rate for decoder / 解码器的学习率
-  lr_rot: 0.001            # Learning rate for rotation / 旋转的学习率
-  lr_trans: 0.001          # Learning rate for translation / 平移的学习率
-  keyframe_every: 5        # Keyframe selection interval / 关键帧选择间隔
-  map_every: 5             # Mapping interval / 映射间隔
-  n_pixels: 0.05           # Number of pixels sampled per mapping / 每次映射采样的像素数
-  first_iters: 200         # Iterations for first frame mapping / 第一帧映射的迭代次数
-  optim_cur: True          # Whether to optimize current frame / 是否优化当前帧
-  min_pixels_cur: 100      # Minimum pixels for current frame optimization / 当前帧优化的最小像素数
-  map_accum_step: 1        # Mapping accumulation step / 映射累积步长
-  pose_accum_step: 5       # Pose accumulation step / 位姿累积步长
-  map_wait_step: 0         # Mapping wait steps / 映射等待步数
-  filter_depth: False      # Whether to filter depth / 是否过滤深度
+  sample: 2048
+  first_mesh: True
+  iters: 10
+  cur_frame_iters: 0
+  lr_embed: 0.01
+  lr_decoder: 0.01
+  lr_rot: 0.001
+  lr_trans: 0.001
+  keyframe_every: 5
+  map_every: 5
+  n_pixels: 0.05
+  first_iters: 200
+  optim_cur: True
+  min_pixels_cur: 100
+  map_accum_step: 1
+  pose_accum_step: 5
+  map_wait_step: 0
+  filter_depth: False
 
 tracking:
-  iter: 10                # Number of tracking iterations / 跟踪的迭代次数
-  sample: 1024            # Number of samples per tracking iteration / 每次跟踪迭代的采样点数
-  pc_samples: 40960       # Number of point cloud samples / 点云采样数
-  lr_rot: 0.001           # Learning rate for rotation in tracking / 跟踪中旋转的学习率
-  lr_trans: 0.001         # Learning rate for translation in tracking / 跟踪中平移的学习率
-  ignore_edge_W: 20       # Width of edge region to ignore / 忽略的图像边缘宽度
-  ignore_edge_H: 20       # Height of edge region to ignore / 忽略的图像边缘高度
-  iter_point: 0           # Number of point iterations / 点迭代次数
-  wait_iters: 100         # Wait iterations before tracking / 跟踪前等待迭代次数
-  const_speed: True       # Assume constant speed model / 是否假设恒速模型
-  best: True              # Whether to use best result / 是否使用最佳结果
+  iter: 10
+  sample: 1024
+  pc_samples: 40960
+  lr_rot: 0.001
+  lr_trans: 0.001
+  ignore_edge_W: 20
+  ignore_edge_H: 20
+  iter_point: 0
+  wait_iters: 100
+  const_speed: True
+  best: True
 
 grid:
-  enc: 'HashGrid'         # Grid encoding type / 网格编码类型
-  tcnn_encoding: True     # Use tiny-cuda-nn encoding / 是否使用tcnn编码
-  hash_size: 16           # Hash grid size / 哈希网格大小
-  voxel_color: 0.08       # Voxel size for color / 颜色体素大小
-  voxel_sdf: 0.02         # Voxel size for SDF / SDF体素大小
-  oneGrid: True           # Use a single grid for all data / 是否使用单一网格
+  enc: 'HashGrid'
+  tcnn_encoding: True
+  hash_size: 16
+  voxel_color: 0.08
+  voxel_sdf: 0.02
+  oneGrid: True
 
 pos:
-  enc: 'OneBlob'          # Position encoding type / 位置编码类型
-  n_bins: 16              # Number of bins for encoding / 编码的分箱数
+  enc: 'OneBlob'
+  n_bins: 16
 
 decoder:
-  geo_feat_dim: 15        # Geometric feature dimension / 几何特征维度
-  hidden_dim: 32          # Hidden layer dimension / 隐藏层维度
-  num_layers: 2           # Number of decoder layers / 解码器层数
-  num_layers_color: 2     # Number of color decoder layers / 颜色解码器层数
-  hidden_dim_color: 32    # Hidden dimension for color decoder / 颜色解码器隐藏层维度
-  tcnn_network: False     # Use tiny-cuda-nn network for decoder / 是否使用tcnn网络解码器
+  geo_feat_dim: 15
+  hidden_dim: 32
+  num_layers: 2
+  num_layers_color: 2
+  hidden_dim_color: 32
+  tcnn_network: False
 
 cam:
-  H: 680                  # Image height / 图像高度
-  W: 1200                 # Image width / 图像宽度
-  fx: 600.0               # Focal length in x / x方向焦距
-  fy: 600.0               # Focal length in y / y方向焦距
-  cx: 599.5               # Principal point x / 主点x坐标
-  cy: 339.5               # Principal point y / 主点y坐标
-  png_depth_scale: 6553.5 # Depth scale for PNG depth images / PNG深度图的深度缩放
-  crop_edge: 0            # Crop edge pixels / 裁剪边缘像素数
-  near: 0                 # Near plane for depth / 深度的近裁剪面
-  far: 5                  # Far plane for depth / 深度的远裁剪面
-  depth_trunc: 100.       # Maximum depth value / 最大深度值
+  H: 680
+  W: 1200
+  fx: 600.0
+  fy: 600.0
+  cx: 599.5
+  cy: 339.5
+  png_depth_scale: 6553.5
+  crop_edge: 0
+  near: 0
+  far: 5
+  depth_trunc: 100.
 
 training:
-  rgb_weight: 5.0         # Weight for RGB loss / RGB损失权重
-  depth_weight: 0.1       # Weight for depth loss / 深度损失权重
-  sdf_weight: 1000        # Weight for SDF loss / SDF损失权重
-  fs_weight: 10           # Weight for free space loss / 空闲空间损失权重
+  rgb_weight: 5.0
+  depth_weight: 0.1
+  sdf_weight: 1000
+  fs_weight: 10
   
-  uncert_weight: 0.005    # NARUTO uncert_weight
+  uncert_weight: 0.005
 
-  eikonal_weight: 0       # Weight for Eikonal loss / Eikonal损失权重
-  smooth_weight: 0.000001 # Weight for smoothness loss / 平滑损失权重
-  smooth_pts: 32          # Number of points for smoothness / 平滑点数
-  smooth_vox: 0.1         # Smoothness voxel size / 平滑体素大小
-  smooth_margin: 0.05     # Margin for smoothness / 平滑边距
-  #n_samples: 256         # Number of samples (deprecated/unused) / 采样点数（未用）
-  n_samples_d: 32         # Number of depth samples / 深度采样数
-  range_d: 0.1            # Depth sampling range / 深度采样范围
-  n_range_d: 11           # Number of depth sampling intervals / 深度采样区间数
-  n_importance: 0         # Number of importance samples / 重要性采样点数
-  perturb: 1              # Whether to perturb sampling / 是否扰动采样
-  white_bkgd: False       # Use white background / 是否使用白色背景
-  trunc: 0.1              # Truncation value for SDF / SDF截断值
-  rot_rep: 'axis_angle'   # Rotation representation type / 旋转表示类型
-  rgb_missing: 0.05       # Ratio of missing RGB data / 缺失RGB数据比例
+  eikonal_weight: 0
+  smooth_weight: 0.000001
+  smooth_pts: 32
+  smooth_vox: 0.1
+  smooth_margin: 0.05
+  n_samples_d: 32
+  range_d: 0.1
+  n_range_d: 11
+  n_importance: 0
+  perturb: 1
+  white_bkgd: False
+  trunc: 0.1
+  rot_rep: 'axis_angle'
+  rgb_missing: 0.05
 
-  # train the new decoder
-  lr_decoder: 0.001 # Learning rate for decoder / 解码器的学习率
-  epochs: 50          # Number of training epochs / 训练的总轮数
+  lr_decoder: 0.001
+  epochs: 50
   patience: 10      
   min_delta: 0.0001
 
 mesh:
-  resolution: 512         # Mesh resolution / 网格分辨率
-  render_color: True      # Whether to render color / 是否渲染颜色
-  vis: 500                # Number of points to visualize / 可视化点数
-  voxel_eval: 0.05        # Voxel size for evaluation mesh / 评估网格体素大小
-  voxel_final: 0.02       # Voxel size for final mesh / 最终网格体素大小
-  visualisation: False    # Enable visualization / 是否启用可视化
-
-# NARUTO modifications
-NARUTO:
-  voxel_size: 0.02       # Voxel size for NARUTO / NARUTO的体素大小 
+  resolution: 512
+  render_color: True
+  vis: 500
+  voxel_eval: 0.05
+  voxel_final: 0.02
+  visualisation: False

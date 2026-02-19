@@ -1,14 +1,15 @@
-<h1 align="center"><strong>RAMEN: Real-time Asynchronous Multi-agent Neural Implicit Mapping</strong></h1>
+<h1 align="center"><strong>UDON: Uncertainty-weighted Graph-based Optimization for Multi-robot Neural Implicit Mapping</strong></h1>
 
 <p align="center">
-	<a href="https://scholar.google.com/citations?user=4uQNsj8AAAAJ&hl=zh-CN">Hongrui Zhao</a>, 
+	<a href="https://scholar.google.com/citations?user=4uQNsj8AAAAJ&hl=zh-CN">Hongrui Zhao*</a>,
+	<a href="https://www.wyaaaattwho.xyz/about">Xunlan Zhou*</a>,
 	<a href="https://www.borisivanovic.com/">Boris Ivanovic</a>,
 	<a href="https://negarmehr.com/">Negar Mehr</a>,
 </p>
 
 <div align="center">
-	<a href='https://arxiv.org/abs/2502.19592'><img src='https://img.shields.io/badge/arXiv-2502.19592-b31b1b'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
- 	<a href='https://iconlab.negarmehr.com/RAMEN/'><img src='https://img.shields.io/badge/Project-Page-Green'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	<a href='https://arxiv.org/abs/2509.12702'><img src='https://img.shields.io/badge/arXiv-2509.12702-b31b1b'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ 	<a href='https://iconlab.negarmehr.com/UDON/'><img src='https://img.shields.io/badge/Project-Page-Green'></a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  	<!-- <a href='https://www.youtube.com/watch?v=psPvanfh7SA&feature=youtu.be'><img src='https://img.shields.io/badge/Youtube-Video-blue'></a> -->
 </div>
 
@@ -17,13 +18,13 @@
 ### (1) Install basic python packages
 First clone the repositroy and create the conda environment.
 ```shell
-git clone https://github.com/labicon/RAMEN.git
-cd RAMEN
+git clone https://github.com/labicon/UDON.git
+cd UDON
 # create conda env
-conda create -n RAMEN python=3.10
-conda activate RAMEN
+conda create -n UDON python=3.10
+conda activate UDON
 ```
-Now install pytorch. RAMEN has been tested on CUDA 11.8 with RTX4090 & RTX2060M on Ubuntu 22/Linux mint 22.
+Now install pytorch. UDON has been tested on CUDA 11.8 with RTX4090 & RTX2060M on Ubuntu 22/Linux mint 22.
 ```shell
 pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
@@ -76,8 +77,8 @@ Some config parameters of your interest:
 * ```multi_agents.complete_graph```: if set to ```True```, the agent communication graph will be a complete graph (every agent can talk to every agent).
 * ```multi_agents.edges_list```: if ```complete_graph``` is set to ```False```, this will define the comuunication edges between agents.
 * ```multi_agents.edges_for_dropout```: A list of [node i, node j, possibility of dropping out] to define the communication dropout rate. Empty list means no communication dropout. 
-* ```multi_agents.distributed_algorithm```: To run RAMEN, set it to `AUQ_CADMM`. Other baseline methods are `CADMM` (this is DiNNO in our paper), `MACIM`, `DSGD`, `DSGT`.
-* ```multi_agents.fix_decoder```: need to set to ```True``` to run RAMEN.
+* ```multi_agents.distributed_algorithm```: To run UDON, set it to `AUQ_CADMM`, and ensure `edge_based: True`. If `edge_based: False`, it will run RAMEN (our baseline). Other baseline methods are `CADMM` (this is DiNNO in our paper), `MACIM`, `DSGD`, `DSGT`.
+* ```multi_agents.fix_decoder```: need to set to ```True``` to run UDON.
 
 ### (2) Run main.py
 Let's run office 1 from replica dataset
@@ -100,15 +101,16 @@ Check out `analysis.ipynb`.
  
 ## Acknowledgement
 
+Our code is based on [RAMEN](https://github.com/labicon/RAMEN). We thank the authors for making these codes publicly available.
 Our code is partially based on [Co-SLAM](https://github.com/HengyiWang/Co-SLAM). We thank the authors for making these codes publicly available.
 
 ## Citation
 
 ```
-@inproceedings{Zhao2025RSS
-  title={RAMEN: Real-time Asynchronous Multi-agent Neural Implicit Mapping},
-  author={Zhao, Hongrui and Ivanovic, Boris and Mehr, Negar},
-  booktitle={Robotics: Science and Systems (RSS)},
+@article{zhao2025udon,
+  title={UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints},
+  author={Zhao, Hongrui and Zhou, Xunlan and Ivanovic, Boris and Mehr, Negar},
+  journal={arXiv preprint arXiv:2509.12702},
   year={2025}
 }
 ```
