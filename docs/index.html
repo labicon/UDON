@@ -133,9 +133,7 @@
         type="video/mp4">
       </video>
       <h2 class="subtitle has-text-centered">
-        In a challenging real-world experiment with limited communication (agents can only exchange information every 30seconds), 
-        our method RAMEN enables each turtlebot to successfully map the full scene while only physically visiting half of the scene (explored areas and trajectories are colored accordingly). 
-        Our method achieves accuracy comparable to the ground truth while the baseline method (DiNNO) fails to converge.
+        In a challenging real-world experiment under severe communication deterioration (e.g., a communication success rate as low as 1%), our method UDON enables each turtlebot to successfully map the full scene while only physically visiting half of the scene (explored areas and trajectories are colored accordingly). UDON maintains high-fidelity reconstructions with accuracy comparable to the ground truth, whereas the baseline method (RAMEN) fails to converge under such extreme disruptions.
       </h2>
     </div>
   </div>
@@ -161,7 +159,41 @@
 
 
 
+<!-- Images -->
 
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full">
+        <h2 class="title is-3">Qualitative Results</h2>
+        <div class="content has-text-justified">
+          <p>
+            Visual comparison of the reconstructed maps. Under extreme communication constraints, baseline methods such as Di-NeRF and RAMEN fail to converge or produce highly noisy representations. In contrast, UDON maintains a consistent, high-fidelity scene representation, accurately recovering structural details (highlighted in orange) comparable to the ground truth.
+          </p>
+          <img src="static/images/qualitative_comparison.jpg" alt="Qualitative comparison of UDON against baselines" style="width: 100%; border-radius: 10px; margin-top: 15px;" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+  
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-full">
+        <h2 class="title is-3">Quantitative Results</h2>
+        <div class="content has-text-justified">
+          <p>
+            Robustness evaluation across varying communication success rates. As communication severely degrades (down to a 1% success rate), UDON dramatically outperforms prior methods, sustaining low artifacts and holes while maintaining a near-optimal completion ratio.
+          </p>
+          <img src="static/images/quantitative_charts.pdf" alt="Quantitative results showing artifacts, holes, and completion ratio" style="width: 100%; border-radius: 10px; margin-top: 15px;" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- End images -->
 
 
 
