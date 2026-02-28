@@ -44,7 +44,6 @@
       color: #363636 !important;
     }
 
-
     .rainbow-text {
       background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
       -webkit-background-clip: text;
@@ -59,7 +58,6 @@
       }
     }
 
-
     .advanced-shadow {
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 8px rgba(0, 0, 0, 0.04);
@@ -70,6 +68,15 @@
     .advanced-shadow:hover {
       transform: translateY(-2px);
       box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12), 0 3px 10px rgba(0, 0, 0, 0.06);
+    }
+    
+    /* BibTeX 代码块的样式美化 */
+    pre {
+      background-color: #f5f5f5 !important;
+      border-radius: 8px;
+      padding: 20px;
+      color: #363636;
+      font-size: 0.95em;
     }
   </style>
 </head>
@@ -175,14 +182,26 @@
             <p>
               Robustness evaluation across varying communication success rates. As communication severely degrades (down to a 1% success rate), UDON dramatically outperforms prior methods, sustaining low artifacts and holes while maintaining a near-optimal completion ratio.
             </p>
-            <embed src="static/images/quantitative_charts.pdf" type="application/pdf" width="100%" height="550px" class="advanced-shadow" style="margin-top: 15px;" />
+            <img src="static/images/quantitative_charts.png" alt="Quantitative evaluation charts" class="advanced-shadow" style="width: 100%; margin-top: 15px;" />
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <footer class="footer has-background-white">
+  <section class="section has-background-white" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <h2 class="title is-3">BibTeX</h2>
+      <pre><code>@inproceedings{zhao2026udon,
+  title={UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints},
+  author={Zhao, Hongrui and Zhou, Xunlan and Ivanovic, Boris and Mehr, Negar},
+  booktitle={Proceedings of the IEEE International Conference on Robotics and Automation (ICRA)},
+  year={2026}
+}</code></pre>
+    </div>
+  </section>
+
+  <footer class="footer is-light">
     <div class="container">
       <div class="columns is-centered">
         <div class="column is-8">
