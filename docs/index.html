@@ -2,39 +2,26 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
-  <!-- Replace the content tag with appropriate information -->
   <meta name="description" content="UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints">
   <meta property="og:title" content="UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints"/>
   <meta property="og:description" content="UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints"/>
-  <meta property="og:url" content="https://https://iconlab.negarmehr.com/UDON/"/>
-  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
+  <meta property="og:url" content="https://iconlab.negarmehr.com/UDON/"/>
   <meta property="og:image" content="static/image/flowchart.png" />
   <meta property="og:image:width" content="1263"/>
   <meta property="og:image:height" content="751"/>
 
-
-  <!-- <meta name="twitter:title" content="TWITTER BANNER TITLE META TAG">
-  <meta name="twitter:description" content="TWITTER BANNER DESCRIPTION META TAG"> -->
-  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X600-->
-  <!-- <meta name="twitter:image" content="static/images/your_twitter_banner_image.png">
-  <meta name="twitter:card" content="summary_large_image"> -->
-  
-  <!-- Keywords for your paper to be indexed by-->
   <meta name="keywords" content="UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints, SLAM, Distributed Optimization, Neural Implicit Mapping, Multi-Robot, Multi-Agent">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>UDON</title>
+  <title>UDON: Uncertainty-weighted Distributed Optimization</title>
   <link rel="icon" type="image/x-icon" href="static/images/blahaj.ico">
-  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
-  rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
 
   <link rel="stylesheet" href="static/css/bulma.min.css">
   <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
   <link rel="stylesheet" href="static/css/bulma-slider.min.css">
   <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
-  <link rel="stylesheet"
-  href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
   <link rel="stylesheet" href="static/css/index.css">
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -44,16 +31,26 @@
   <script src="static/js/bulma-slider.min.js"></script>
   <script src="static/js/index.js"></script>
 
-  <!-- for google verification -->
   <meta name="google-site-verification" content="ofm0KCCgUiCsQrrKi3ncA0XphB-kfgnLMKo0vmzyGRk" />
   
   <style>
+
+    body {
+      background-color: #ffffff !important;
+      color: #363636 !important;
+    }
+    
+    h1, h2, h3, p {
+      color: #363636 !important;
+    }
+
+
     .rainbow-text {
       background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       animation: rainbow-animation 5s linear infinite;
-      display: inline-block; /* Essential for the gradient to apply correctly */
+      display: inline-block;
     }
 
     @keyframes rainbow-animation {
@@ -61,53 +58,57 @@
         background-position: 200% center;
       }
     }
+
+
+    .advanced-shadow {
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 8px rgba(0, 0, 0, 0.04);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      background-color: #ffffff;
+    }
+
+    .advanced-shadow:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12), 0 3px 10px rgba(0, 0, 0, 0.06);
+    }
   </style>
 </head>
 <body>
 
-
-  <section class="hero">
+  <section class="hero has-background-white">
     <div class="hero-body">
       <div class="container is-max-desktop">
         <div class="columns is-centered">
           <div class="column has-text-centered">
-            <!-- Title here -->
             <h1 class="title is-1 publication-title">UDON: Uncertainty-weighted Distributed Optimization for Multi-Robot Neural Implicit Mapping under Extreme Communication Constraints</h1>
             <h2 class="subtitle is-3 publication-title">
               <span class="rainbow-text">Accepted by ICRA 2026</span>
             </h2>
             <div class="is-size-5 publication-authors">
-              <!-- Paper authors -->
               <span class="author-block">Hongrui Zhao<sup>*</sup>,</span>
-                <span class="author-block"><a href="https://www.wyaaaattwho.xyz/">Xunlan Zhou</a><sup>*</sup>,</span>
-                  <span class="author-block"><a href="https://www.borisivanovic.com/">Boris Ivanovic</a>,</span>
-                    <span class="author-block"><a href="https://negarmehr.com/">Negar Mehr</a>,</span>
-  
-                  </div>
+              <span class="author-block"><a href="https://www.wyaaaattwho.xyz/">Xunlan Zhou</a><sup>*</sup>,</span>
+              <span class="author-block"><a href="https://www.borisivanovic.com/">Boris Ivanovic</a>,</span>
+              <span class="author-block"><a href="https://negarmehr.com/">Negar Mehr</a></span>
+            </div>
 
-                  <div class="is-size-5 publication-authors">
-                    <span class="author-block">University of Illinois Urbana-Champaign</span><br>
-                    <span class="author-block">Nanjing University</span><br>
-                    <span class="author-block">NVIDIA Research</span><br>
-                    <span class="author-block">University of California Berkeley</span>
-                  </div>
+            <div class="is-size-5 publication-authors" style="margin-top: 15px; font-size: 1.1rem !important;">
+              <span class="author-block">University of Illinois Urbana-Champaign</span><br>
+              <span class="author-block">Nanjing University</span><br>
+              <span class="author-block">NVIDIA Research</span><br>
+              <span class="author-block">University of California Berkeley</span>
+            </div>
 
- 
-                  <!-- Github link -->
-                  <span class="link-block">
-                    <a href="https://github.com/labicon/UDON" target="_blank"
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span class="icon">
-                      <i class="fab fa-github"></i>
-                    </span>
-                    <span>Code</span>
-                  </a>
-                </span> 
-
-                <!-- ArXiv abstract Link -->
-                <span class="link-block">
-                  <a href="https://arxiv.org/abs/2509.12702" target="_blank"
-                  class="external-link button is-normal is-rounded is-dark">
+            <div style="margin-top: 25px;">
+              <span class="link-block">
+                <a href="https://github.com/labicon/UDON" target="_blank" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                </a>
+              </span> 
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2509.12702" target="_blank" class="external-link button is-normal is-rounded is-dark">
                   <span class="icon">
                     <i class="ai ai-arxiv"></i>
                   </span>
@@ -119,119 +120,82 @@
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-
-<!-- Teaser video-->
-<section class="hero teaser">
-  <div class="container is-max-desktop">
-    <div class="hero-body">
-      <video poster="" id="tree" autoplay controls muted loop height="100%">
-        <!-- Your video here -->
-        <source src="static/videos/hardware_experiment_video.mp4"
-        type="video/mp4">
-      </video>
-      <h2 class="subtitle has-text-centered">
-        In a challenging real-world experiment under severe communication deterioration (e.g., a communication success rate as low as 1%), our method UDON enables each turtlebot to successfully map the full scene while only physically visiting half of the scene (explored areas and trajectories are colored accordingly). UDON maintains high-fidelity reconstructions with accuracy comparable to the ground truth, whereas the baseline method (RAMEN) fails to converge under such extreme disruptions.
-      </h2>
+  <section class="hero teaser has-background-white">
+    <div class="container is-max-desktop">
+      <div class="hero-body">
+        <video poster="" id="tree" autoplay controls muted loop height="100%" class="advanced-shadow">
+          <source src="static/videos/hardware_experiment_video.mp4" type="video/mp4">
+        </video>
+        <h2 class="subtitle has-text-centered" style="margin-top: 20px; font-size: 1.1rem; line-height: 1.6;">
+          In a challenging real-world experiment under severe communication deterioration (e.g., a communication success rate as low as 1%), our method UDON enables each turtlebot to successfully map the full scene while only physically visiting half of the scene (explored areas and trajectories are colored accordingly). UDON maintains high-fidelity reconstructions with accuracy comparable to the ground truth, whereas the baseline method (RAMEN) fails to converge under such extreme disruptions.
+        </h2>
+      </div>
     </div>
-  </div>
-</section>
-<!-- End teaser video -->
+  </section>
 
-<!-- Paper abstract -->
-<section class="section hero is-light">
-  <div class="container is-max-desktop">
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-four-fifths">
-        <h2 class="title is-3">Abstract</h2>
-        <div class="content has-text-justified">
-          <p>
-           Multi-robot mapping with neural implicit representations enables the compact reconstruction of complex environments. However, it demands robustness against communication challenges like packet loss and limited bandwidth. While prior works have introduced various mechanisms to mitigate communication disruptions, performance degradation still occurs under extremely low communication success rates. This paper presents UDON, a real-time multi-agent neural implicit mapping framework that introduces a novel uncertainty-weighted distributed optimization to achieve high-quality mapping under severe communication deterioration. The uncertainty weighting prioritizes more reliable portions of the map, while the distributed optimization isolates and penalizes mapping disagreement between individual pairs of communicating agents. We conduct extensive experiments on standard benchmark datasets and real-world robot hardware. We demonstrate that UDON significantly outperforms existing baselines, maintaining high-fidelity reconstructions and consistent scene representations even under extreme communication degradation (as low as 1% success rate).
-          </p>
+  <section class="section hero is-light">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title is-3">Abstract</h2>
+          <div class="content has-text-justified">
+            <p>
+              Multi-robot mapping with neural implicit representations enables the compact reconstruction of complex environments. However, it demands robustness against communication challenges like packet loss and limited bandwidth. While prior works have introduced various mechanisms to mitigate communication disruptions, performance degradation still occurs under extremely low communication success rates. This paper presents UDON, a real-time multi-agent neural implicit mapping framework that introduces a novel uncertainty-weighted distributed optimization to achieve high-quality mapping under severe communication deterioration. The uncertainty weighting prioritizes more reliable portions of the map, while the distributed optimization isolates and penalizes mapping disagreement between individual pairs of communicating agents. We conduct extensive experiments on standard benchmark datasets and real-world robot hardware. We demonstrate that UDON significantly outperforms existing baselines, maintaining high-fidelity reconstructions and consistent scene representations even under extreme communication degradation (as low as 1% success rate).
+            </p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
-<!-- End paper abstract -->
+  </section>
 
-
-
-<!-- Images -->
-
-<section class="section">
-  <div class="container is-max-desktop">
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-full">
-        <h2 class="title is-3">Qualitative Results</h2>
-        <div class="content has-text-justified">
-          <p>
-            Visual comparison of the reconstructed maps. Under extreme communication constraints, baseline methods such as Di-NeRF and RAMEN fail to converge or produce highly noisy representations. In contrast, UDON maintains a consistent, high-fidelity scene representation, accurately recovering structural details (highlighted in orange) comparable to the ground truth.
-          </p>
-          <img src="static/images/qualitative_comparison.png" alt="Qualitative comparison of UDON against baselines" style="width: 100%; border-radius: 10px; margin-top: 15px;" />
+  <section class="section has-background-white">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-full">
+          <h2 class="title is-3">Qualitative Results</h2>
+          <div class="content has-text-justified">
+            <p>
+              Visual comparison of the reconstructed maps. Under extreme communication constraints, baseline methods such as Di-NeRF and RAMEN fail to converge or produce highly noisy representations. In contrast, UDON maintains a consistent, high-fidelity scene representation, accurately recovering structural details (highlighted in orange) comparable to the ground truth.
+            </p>
+            <img src="static/images/qualitative_comparison.png" alt="Qualitative comparison of UDON against baselines" class="advanced-shadow" style="width: 100%; margin-top: 15px;" />
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
   
-<section class="section">
-  <div class="container is-max-desktop">
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-full">
-        <h2 class="title is-3">Quantitative Results</h2>
-        <div class="content has-text-justified">
-          <p>
-            Robustness evaluation across varying communication success rates. As communication severely degrades (down to a 1% success rate), UDON dramatically outperforms prior methods, sustaining low artifacts and holes while maintaining a near-optimal completion ratio.
-          </p>
-         <embed src="static/images/quantitative_charts.pdf" type="application/pdf" width="100%" height="500px" style="border-radius: 10px; margin-top: 15px;" />
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- End images -->
-
-
-
-
-
-
-<!--BibTex citation -->
-  <!-- <section class="section" id="BibTeX">
-    <div class="container is-max-desktop content">
-      <h2 class="title">BibTeX</h2>
-      <pre><code>BibTex Code Here</code></pre>
-    </div>
-</section> -->
-<!--End BibTex citation -->
-
-
-  <footer class="footer">
-  <div class="container">
-    <div class="columns is-centered">
-      <div class="column is-8">
-        <div class="content">
-
-          <p>
-            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
-            <br> This website is licensed under a <a rel="license"  href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
-            Commons Attribution-ShareAlike 4.0 International License</a>.
-          </p>
-
+  <section class="section is-light">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-full">
+          <h2 class="title is-3">Quantitative Results</h2>
+          <div class="content has-text-justified">
+            <p>
+              Robustness evaluation across varying communication success rates. As communication severely degrades (down to a 1% success rate), UDON dramatically outperforms prior methods, sustaining low artifacts and holes while maintaining a near-optimal completion ratio.
+            </p>
+            <embed src="static/images/quantitative_charts.pdf" type="application/pdf" width="100%" height="550px" class="advanced-shadow" style="margin-top: 15px;" />
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</footer>
+  </section>
 
-<!-- Statcounter tracking code -->
-  
-<!-- You can add a tracker to track page visits by creating an account at statcounter.com -->
+  <footer class="footer has-background-white">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column is-8">
+          <div class="content has-text-centered">
+            <p>
+              This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+              <br> This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
 
-    <!-- End of Statcounter Code -->
-
-  </body>
-  </html>
+</body>
+</html>
