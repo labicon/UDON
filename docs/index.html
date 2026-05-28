@@ -132,11 +132,9 @@
   <section class="hero teaser has-background-white">
     <div class="container is-max-desktop">
       <div class="hero-body">
-        <video poster="" id="tree" autoplay controls muted loop height="100%" class="advanced-shadow">
-          <source src="static/videos/hardware_experiment_video.mp4" type="video/mp4">
-        </video>
+        <img src="static/images/exp_hardware_udon.png" class="advanced-shadow" style="width: 100%; margin-top: 15px;" />
         <h2 class="subtitle has-text-centered" style="margin-top: 20px; font-size: 1.1rem; line-height: 1.6;">
-          In a challenging real-world experiment under severe communication deterioration (e.g., a communication success rate as low as 1%), our method UDON enables each turtlebot to successfully map the full scene while only physically visiting half of the scene (explored areas and trajectories are colored accordingly). UDON maintains high-fidelity reconstructions with accuracy comparable to the ground truth, whereas the baseline method (RAMEN) fails to converge under such extreme disruptions.
+          In a challenging real-world experiment under severe communication deterioration (e.g., a communication success rate as low as 5%), our method UDON enables each turtlebot to successfully map the full scene while only physically visiting half of the scene (explored areas and trajectories are colored accordingly). UDON maintains high-fidelity reconstructions with accuracy comparable to the ground truth, whereas the baseline method (RAMEN) fails to converge under such extreme disruptions.
         </h2>
       </div>
     </div>
@@ -156,6 +154,44 @@
       </div>
     </div>
   </section>
+
+
+    <section class="section has-background-white">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-full">
+          <h2 class="title is-3">Analysis</h2>
+          <div class="content has-text-justified">
+            <p>
+              Existing multi-agent mapping methods (Di-NeRF, RAMEN) fail to converge at the very low communication rate.
+              After examining the loss curves, we discover that the divergence is mainly caused by the dual variable component, which oscillates with increasing magnitude.
+            </p>
+            <img src="static/images/loss_plot_scene_office1_com_rate_90.png" class="advanced-shadow" style="width: 100%; margin-top: 15px;" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <section class="section has-background-white">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-full">
+          <h2 class="title is-3">UDON: pair-wise dual variable</h2>
+          <div class="content has-text-justified">
+            <p>
+              In UDON, we assign a unique dual variable to each communication link.
+              This approach exclusively use information from currently-connected neighbors, which prevents the optimization from being corrupted by outdated data from long-disconnected agents, thus preventing divergence.
+            </p>
+            <img src="static/images/udon.png" class="advanced-shadow" style="width: 100%; margin-top: 15px;" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
 
   <section class="section has-background-white">
     <div class="container is-max-desktop">
